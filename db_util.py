@@ -117,3 +117,56 @@ def save_inv_extraction(result):
                     item.get("UnitPrice"),
                     item.get("Amount")
                 ))
+
+
+def get_invoice_by_id(invoice_id: str):
+    with get_db() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # invoice main data
+        cursor.execute(
+            "SELECT * FROM invoices WHERE InvoiceId = ?",
+            (invoice_id,)
+        )
+        invoice = cursor.fetchone()
+
+        if not invoice:
+            return None
+
+        invoice_dict = dict(invoice)
+
+        # items
+        cursor.execute(
+            "SELECT Description, Name, Quantity, UnitPrice, Amount FROM items WHERE InvoiceId = ?",
+            (invoice_id,)
+        )
+        items = [dict(row) for row in cursor.fetchall()]
+        invoice_dict["Items"] = items
+
+        return invoice_dict
+
+
+def get_invoices_by_vendor(vendor_name: str):
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM invoices
+            WHERE VendorName = ?
+            """,
+            (vendor_name,)
+        )
+
+        rows = cursor.fetchall()
+
+        columns = [col[0] for col in cursor.description]
+
+        invoices = []
+        for row in rows:
+            invoices.append(dict(zip(columns, row)))
+
+        return invoices
+
