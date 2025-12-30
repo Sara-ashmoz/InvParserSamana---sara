@@ -4,7 +4,7 @@ import base64
 from db_util import init_db, save_inv_extraction, get_invoice_by_id, get_invoices_by_vendor
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
-
+import time
 
 app = FastAPI()
 
@@ -44,6 +44,7 @@ async def extract(file: UploadFile = File(...)):
             )
         ]
     )
+    time_1 = time.time()
 
     try:
         response = doc_client.analyze_document(request)
@@ -54,6 +55,7 @@ async def extract(file: UploadFile = File(...)):
                 "error": "The service is currently unavailable. Please try again later."
                 }
             )
+    time_2 = time.time()
 
     data = {}
     data_confidence = {}
@@ -81,10 +83,15 @@ async def extract(file: UploadFile = File(...)):
     data["Items"] = data_items
 
 
+    prediction_time = time_2 - time_1
+
+
     result = {
         "confidence": 1.0,
         "data": data,
-        "dataConfidence": data_confidence
+        "dataConfidence": data_confidence,
+        "predictionTime": prediction_time 
+
     }
 
     save_inv_extraction(result)
