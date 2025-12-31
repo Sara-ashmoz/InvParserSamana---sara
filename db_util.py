@@ -1,5 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
+import os
 
 
 DB_PATH = "invoices.db"
@@ -141,6 +142,7 @@ def get_invoice_by_id(invoice_id: str):
             "SELECT Description, Name, Quantity, UnitPrice, Amount FROM items WHERE InvoiceId = ?",
             (invoice_id,)
         )
+
         items = [dict(row) for row in cursor.fetchall()]
         invoice_dict["Items"] = items
 

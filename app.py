@@ -65,11 +65,11 @@ async def extract(file: UploadFile = File(...)):
                 field_name = field.field_label.name if field.field_label else None
                 if field_name == 'Items':
                     dict = {}
-                    for texts in field.field_value.items[0].field_value.items:
-                        field_valuee = texts.field_label.name
-                        field_text = texts.field_value.text
-                        dict[field_valuee] = field_text
-                        
+                    for items in field.field_value.items:
+                        for texts in items.field_value.items:
+                            field_value = texts.field_label.name
+                            field_text = texts.field_value.text
+                            dict[field_value] = field_text    
                     data_items.append(dict) 
   
                 else:
@@ -105,6 +105,7 @@ def invoice(invoice_id: str):
 
     return invoice_data
 
+
 @app.get("/invoices/vendor/{vendor_name}")
 def get_invoices_by_vendor_endpoint(vendor_name: str):
     invoices = get_invoices_by_vendor(vendor_name)
@@ -116,16 +117,11 @@ def get_invoices_by_vendor_endpoint(vendor_name: str):
             "invoices": []
         }
 
-
-
-
     return {
         "VendorName": vendor_name,
         "TotalInvoices": len(invoices),
         "invoices": invoices
     }
-
-
 
 
 if __name__ == "__main__":
