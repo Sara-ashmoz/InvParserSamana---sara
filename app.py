@@ -76,7 +76,7 @@ async def extract(file: UploadFile = File(...)):
   
                 else:
                     field_confidence = field.field_label.confidence if field.field_label else None
-                    field_value = field.field_value.text
+                    field_value = field.field_value.value
             
                 data[field_name] = field_value
                 data_confidence[field_name] = field_confidence
@@ -87,7 +87,7 @@ async def extract(file: UploadFile = File(...)):
 
 
     result = {
-        "confidence": 1.0,
+        "confidence": page.detected_document_types[0].confidence if page.detected_document_types else 1.0,
         "data": data,
         "dataConfidence": data_confidence,
         "predictionTime": prediction_time 
