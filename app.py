@@ -112,6 +112,7 @@ def invoice(invoice_id: str):
 
     return invoice_data
 
+
 @app.get("/invoices/vendor/{vendor_name}")
 def get_invoices_by_vendor_endpoint(vendor_name: str):
     invoices = get_invoices_by_vendor(vendor_name)
@@ -123,9 +124,6 @@ def get_invoices_by_vendor_endpoint(vendor_name: str):
             "invoices": []
         }
 
-
-
-
     return {
         "VendorName": vendor_name,
         "TotalInvoices": len(invoices),
@@ -133,6 +131,9 @@ def get_invoices_by_vendor_endpoint(vendor_name: str):
     }
 
 
+@app.get("/")
+def home():
+    return {"msg": "Hello World"}
 
 
 if __name__ == "__main__":

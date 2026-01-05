@@ -24,7 +24,7 @@ class TestInvoiceExtraction(unittest.TestCase):
                 'detected_document_types': [
                     type('obj', (object,), {
                         'document_type': 'INVOICE',
-                        'confidence': 1
+                        'confidence': 0.4
                     })()
                 ],
                 'pages': [
