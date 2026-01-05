@@ -87,7 +87,7 @@ async def extract(file: UploadFile = File(...)):
 
 
     result = {
-        "confidence": page.detected_document_types[0].confidence if page.detected_document_types else 1.0,
+        "confidence": page.detected_document_types[0].confidence if page.detected_document_types[0] else 1.0,
         "data": data,
         "dataConfidence": data_confidence,
         "predictionTime": prediction_time 
