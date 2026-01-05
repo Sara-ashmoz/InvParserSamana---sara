@@ -168,4 +168,7 @@ def get_invoices_by_vendor(vendor_name: str):
         for row in rows:
             invoices.append(dict(zip(columns, row)))
 
+
         return invoices
+
+
