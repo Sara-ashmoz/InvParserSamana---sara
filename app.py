@@ -69,7 +69,7 @@ async def extract(file: UploadFile = File(...)):
                     dict = {}
                     for texts in field.field_value.items[0].field_value.items:
                         field_valuee = texts.field_label.name
-                        field_text = texts.field_value.text
+                        field_text = texts.field_value.value
                         dict[field_valuee] = field_text
                         
                     data_items.append(dict) 
