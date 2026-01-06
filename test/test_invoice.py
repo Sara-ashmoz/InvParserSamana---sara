@@ -1,0 +1,40 @@
+import unittest
+from fastapi.testclient import TestClient
+from app import app
+from db_util import init_db
+
+class TestInvoiceEndpoint(unittest.TestCase):
+
+    def setUp(self):
+        init_db()
+        self.client = TestClient(app)
+
+
+    
+    def test_get_invoice_not_found_returns_404(self):
+        response = self.client.get("/invoice/NOT_EXIST")
+
+        self.assertEqual(response.status_code, 404)
+
+        body = response.json()
+        self.assertIn("error", body)
+        self.assertEqual(body["error"], "Invoice not found")
+    
+
+    
+    
+    def test_get_invoice_success(self):
+        invoice_id = "36259"
+
+        response = self.client.get(f"/invoice/{invoice_id}")
+
+        self.assertEqual(response.status_code, 200)
+
+        body = response.json()
+
+        self.assertIn("InvoiceId", body)
+        self.assertEqual(body["InvoiceId"], invoice_id)
+
+        self.assertIn("Items", body)
+        self.assertIsInstance(body["Items"], list)
+

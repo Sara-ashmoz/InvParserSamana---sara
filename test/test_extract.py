@@ -1,9 +1,17 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from db_util import init_db
+from fastapi.testclient import TestClient
+from app import app, oci
+
+
 
 
 class TestInvoiceExtraction(unittest.TestCase):
+
+    def setUp(self):
+        init_db()
+        self.client = TestClient(app)
     
     @patch('oci.ai_document.AIServiceDocumentClient')
     @patch('oci.config.from_file', return_value={})
@@ -193,7 +201,38 @@ class TestInvoiceExtraction(unittest.TestCase):
             "Invalid document. Please upload a valid PDF invoice with high confidence."
         )
 
+    def test_extract_oci_failure_returns_503(self):
+        """
+        Error case: doc_client.analyze_document raises ServiceError -> should return 503
+        """
 
+        # גורמים ל-doc_client של האפליקציה "ליפול" בדיוק במקום הנכון
+        from app import doc_client  # זה ה-doc_client הגלובלי מה-app.py
+
+        with patch.object(
+            doc_client,
+            "analyze_document",
+            side_effect=oci.exceptions.ServiceError(
+                status=503,
+                code="ServiceError",
+                headers={},
+                message="OCI down"
+            )
+        ):
+            with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
+                response = self.client.post(
+                    "/extract",
+                    files={"file": ("invoice.pdf", f, "application/pdf")}
+                )
+
+        self.assertEqual(response.status_code, 503)
+
+        body = response.json()
+        self.assertIn("error", body)
+        self.assertEqual(
+            body["error"],
+            "The service is currently unavailable. Please try again later."
+        )
 
 if __name__ == '__main__':
     unittest.main()
