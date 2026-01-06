@@ -6,12 +6,14 @@ from fastapi.responses import JSONResponse
 from fastapi import HTTPException
 import time
 
-app = FastAPI()
-
-# Load OCI config from ~/.oci/config
-config = oci.config.from_file()
+try:
+    app = FastAPI()
+    config = oci.config.from_file()
+except Exception:
+    doc_client = None
 
 doc_client = oci.ai_document.AIServiceDocumentClient(config)
+
 
 @app.post("/extract")
 async def extract(file: UploadFile = File(...)):
