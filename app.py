@@ -136,6 +136,7 @@ def home():
     return {"msg": "Hello World"}
 
 
+
 if __name__ == "__main__":
     import uvicorn
 
