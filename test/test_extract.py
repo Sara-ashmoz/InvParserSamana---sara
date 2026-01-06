@@ -171,5 +171,6 @@ class TestInvoiceExtraction(unittest.TestCase):
         print(f"Response: {json.dumps(result, indent=2)}")
 
 
+
 if __name__ == '__main__':
     unittest.main()
