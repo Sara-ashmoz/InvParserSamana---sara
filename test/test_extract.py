@@ -171,5 +171,29 @@ class TestInvoiceExtraction(unittest.TestCase):
         print(f"Response: {json.dumps(result, indent=2)}")
 
 
+    @patch("oci.ai_document.AIServiceDocumentClient")
+    @patch("oci.config.from_file", return_value={})
+    def test_extract_invalid_file_type_returns_400(self, mock_config, mock_client_class):
+        """
+        Error case: upload not a PDF -> should return 400
+        """
+        fake_bytes = b"hello this is not a pdf"
+
+        response = self.client.post(
+            "/extract",
+            files={"file": ("not_pdf.txt", fake_bytes, "text/plain")}
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        body = response.json()
+        self.assertIn("error", body)
+        self.assertEqual(
+            body["error"],
+            "Invalid document. Please upload a valid PDF invoice with high confidence."
+        )
+
+
+
 if __name__ == '__main__':
     unittest.main()
