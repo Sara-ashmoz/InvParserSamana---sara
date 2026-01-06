@@ -110,6 +110,7 @@ def invoice(invoice_id: str):
             content={"error": "Invoice not found"}
         )
 
+
     return invoice_data
 
 
