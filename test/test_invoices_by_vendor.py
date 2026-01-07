@@ -35,4 +35,5 @@ class TestInvoicesByVendorEndpoint(unittest.TestCase):
 
         self.assertEqual(body["VendorName"], vendor_name)
         self.assertGreater(body["TotalInvoices"], 0)
+        self.assertEqual(body["TotalInvoices"], 5)
         self.assertIsInstance(body["invoices"], list)

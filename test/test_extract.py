@@ -15,10 +15,7 @@ class TestInvoiceExtraction(unittest.TestCase):
     @patch("app.get_doc_client")
     def test_extract_endpoint(self, mock_get_doc_client):
         """Test the /extract endpoint with invoice_Aaron_Bergman_36259.pdf"""
-        
-        # Initialize database
-        init_db()
-        
+       
         # Setup mock client instance
         mock_client_instance = MagicMock()
         mock_get_doc_client.return_value = mock_client_instance
@@ -131,8 +128,6 @@ class TestInvoiceExtraction(unittest.TestCase):
         from fastapi.testclient import TestClient
         import json
         
-        # Create test client
-        client = TestClient(app)
         
         # Load the test invoice file
         with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
