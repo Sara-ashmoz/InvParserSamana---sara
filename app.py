@@ -6,13 +6,13 @@ from fastapi.responses import JSONResponse
 from fastapi import HTTPException
 import time
 
-try:
-    app = FastAPI()
-    config = oci.config.from_file()
-except Exception:
-    doc_client = None
 
-doc_client = oci.ai_document.AIServiceDocumentClient(config)
+app = FastAPI()
+
+def get_doc_client():
+    config = oci.config.from_file()
+    return oci.ai_document.AIServiceDocumentClient(config)
+
 
 
 @app.post("/extract")
@@ -49,6 +49,7 @@ async def extract(file: UploadFile = File(...)):
     time_1 = time.time()
 
     try:
+        doc_client = get_doc_client()
         response = doc_client.analyze_document(request)
     except oci.exceptions.ServiceError:
         return JSONResponse(

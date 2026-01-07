@@ -2,20 +2,18 @@ import unittest
 from unittest.mock import patch, MagicMock
 from db_util import init_db
 from fastapi.testclient import TestClient
-from app import app, oci
-
-
+import oci 
 
 
 class TestInvoiceExtraction(unittest.TestCase):
 
     def setUp(self):
         init_db()
+        from app import app
         self.client = TestClient(app)
     
-    @patch('oci.ai_document.AIServiceDocumentClient')
-    @patch('oci.config.from_file', return_value={})
-    def test_extract_endpoint(self, mock_config, mock_client_class):
+    @patch("app.get_doc_client")
+    def test_extract_endpoint(self, mock_get_doc_client):
         """Test the /extract endpoint with invoice_Aaron_Bergman_36259.pdf"""
         
         # Initialize database
@@ -23,7 +21,7 @@ class TestInvoiceExtraction(unittest.TestCase):
         
         # Setup mock client instance
         mock_client_instance = MagicMock()
-        mock_client_class.return_value = mock_client_instance
+        mock_get_doc_client.return_value = mock_client_instance
         mock_analyze = mock_client_instance.analyze_document
         
         # Mock OCI response - return the exact expected result structure
@@ -138,7 +136,7 @@ class TestInvoiceExtraction(unittest.TestCase):
         
         # Load the test invoice file
         with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
-            response = client.post(
+            response = self.client.post(
                 "/extract",
                 files={"file": ("invoice_Aaron_Bergman_36259.pdf", f, "application/pdf")}
             )
@@ -179,9 +177,7 @@ class TestInvoiceExtraction(unittest.TestCase):
         print(f"Response: {json.dumps(result, indent=2)}")
 
 
-    @patch("oci.ai_document.AIServiceDocumentClient")
-    @patch("oci.config.from_file", return_value={})
-    def test_extract_invalid_file_type_returns_400(self, mock_config, mock_client_class):
+    def test_extract_invalid_file_type_returns_400(self):
         """
         Error case: upload not a PDF -> should return 400
         """
@@ -201,38 +197,32 @@ class TestInvoiceExtraction(unittest.TestCase):
             "Invalid document. Please upload a valid PDF invoice with high confidence."
         )
 
-    def test_extract_oci_failure_returns_503(self):
-        """
-        Error case: doc_client.analyze_document raises ServiceError -> should return 503
-        """
+    @patch("app.get_doc_client")
+    def test_extract_oci_failure_returns_503(self, mock_get_doc_client):
+        # יוצרים client מזויף שהמתודה analyze_document שלו זורקת ServiceError
+        fake_client = MagicMock()
+        fake_client.analyze_document.side_effect = oci.exceptions.ServiceError(
+            status=503,
+            code="ServiceError",
+            headers={},
+            message="OCI down"
+        )
+        mock_get_doc_client.return_value = fake_client
 
-        # גורמים ל-doc_client של האפליקציה "ליפול" בדיוק במקום הנכון
-        from app import doc_client  # זה ה-doc_client הגלובלי מה-app.py
-
-        with patch.object(
-            doc_client,
-            "analyze_document",
-            side_effect=oci.exceptions.ServiceError(
-                status=503,
-                code="ServiceError",
-                headers={},
-                message="OCI down"
+        with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
+            response = self.client.post(
+                "/extract",
+                files={"file": ("invoice.pdf", f, "application/pdf")}
             )
-        ):
-            with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
-                response = self.client.post(
-                    "/extract",
-                    files={"file": ("invoice.pdf", f, "application/pdf")}
-                )
 
         self.assertEqual(response.status_code, 503)
-
         body = response.json()
         self.assertIn("error", body)
         self.assertEqual(
             body["error"],
             "The service is currently unavailable. Please try again later."
         )
+
 
 if __name__ == '__main__':
     unittest.main()
