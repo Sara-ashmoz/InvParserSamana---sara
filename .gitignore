@@ -42,3 +42,5 @@ Thumbs.db
 .ipynb_checkpoints/
 
 coverage.xml
+allure-results/
+allure-report/
