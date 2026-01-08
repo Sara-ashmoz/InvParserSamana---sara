@@ -11,7 +11,7 @@ class TestInvoiceEndpoint(unittest.TestCase):
 
 
     
-    def test_get_invoice_not_found_returns_404(self):
+    def test_invoice_when_NOT_EXIST(self):
         response = self.client.get("/invoice/NOT_EXIST")
 
         self.assertEqual(response.status_code, 404)

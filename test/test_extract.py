@@ -172,7 +172,7 @@ class TestInvoiceExtraction(unittest.TestCase):
         print(f"Response: {json.dumps(result, indent=2)}")
 
 
-    def test_extract_invalid_file_type_returns_400(self):
+    def test_upload_not_a_pdf(self):
         """
         Error case: upload not a PDF -> should return 400
         """
@@ -193,7 +193,7 @@ class TestInvoiceExtraction(unittest.TestCase):
         )
 
     @patch("app.get_doc_client")
-    def test_extract_oci_failure_returns_503(self, mock_get_doc_client):
+    def test_of_unavailable_service(self, mock_get_doc_client):
         # יוצרים client מזויף שהמתודה analyze_document שלו זורקת ServiceError
         fake_client = MagicMock()
         fake_client.analyze_document.side_effect = oci.exceptions.ServiceError(

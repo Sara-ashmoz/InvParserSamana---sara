@@ -10,11 +10,11 @@ This table shows which integration tests cover each API endpoint.
 |-------------|------------|---------|-----------|-----------|
 | `/extract` | POST | Yes | test_extract.py | test_extract_endpoint |
 
-| `/extract` | POST (invalid file) | Yes | test_extract.py | test_extract_invalid_file_type_returns_400 |
+| `/extract` | POST (invalid file) | Yes | test_extract.py | test_upload_not_a_pdf |
 
-| `/extract` | POST (OCI failure)  | Yes | test_extract.py | test_extract_oci_failure_returns_503 |
+| `/extract` | POST (OCI failure)  | Yes | test_extract.py | test_of_unavailable_service |
 
-| `/invoice/{invoice_id}` | GET (not found) | Yes | test_invoice.py | test_get_invoice_not_found_returns_404 |
+| `/invoice/{invoice_id}` | GET (not found) | Yes | test_invoice.py | test_upload_not_a_pdf |
 
 | `/invoice/{invoice_id}` | GET (success) | Yes | test_invoice.py | test_get_invoice_success |
 
