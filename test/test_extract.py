@@ -1,21 +1,24 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from db_util import init_db
+from fastapi.testclient import TestClient
+import oci 
 
 
 class TestInvoiceExtraction(unittest.TestCase):
-    
-    @patch('oci.ai_document.AIServiceDocumentClient')
-    @patch('oci.config.from_file', return_value={})
-    def test_extract_endpoint(self, mock_config, mock_client_class):
-        """Test the /extract endpoint with invoice_Aaron_Bergman_36259.pdf"""
-        
-        # Initialize database
+
+    def setUp(self):
         init_db()
-        
+        from app import app
+        self.client = TestClient(app)
+    
+    @patch("app.get_doc_client")
+    def test_extract_endpoint(self, mock_get_doc_client):
+        """Test the /extract endpoint with invoice_Aaron_Bergman_36259.pdf"""
+       
         # Setup mock client instance
         mock_client_instance = MagicMock()
-        mock_client_class.return_value = mock_client_instance
+        mock_get_doc_client.return_value = mock_client_instance
         mock_analyze = mock_client_instance.analyze_document
         
         # Mock OCI response - return the exact expected result structure
@@ -125,12 +128,10 @@ class TestInvoiceExtraction(unittest.TestCase):
         from fastapi.testclient import TestClient
         import json
         
-        # Create test client
-        client = TestClient(app)
         
         # Load the test invoice file
         with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
-            response = client.post(
+            response = self.client.post(
                 "/extract",
                 files={"file": ("invoice_Aaron_Bergman_36259.pdf", f, "application/pdf")}
             )
@@ -170,6 +171,52 @@ class TestInvoiceExtraction(unittest.TestCase):
         print("✓ All assertions passed!")
         print(f"Response: {json.dumps(result, indent=2)}")
 
+
+    def test_upload_not_a_pdf(self):
+        """
+        Error case: upload not a PDF -> should return 400
+        """
+        fake_bytes = b"hello this is not a pdf"
+
+        response = self.client.post(
+            "/extract",
+            files={"file": ("not_pdf.txt", fake_bytes, "text/plain")}
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        body = response.json()
+        self.assertIn("error", body)
+        self.assertEqual(
+            body["error"],
+            "Invalid document. Please upload a valid PDF invoice with high confidence."
+        )
+
+    @patch("app.get_doc_client")
+    def test_of_unavailable_service(self, mock_get_doc_client):
+        # יוצרים client מזויף שהמתודה analyze_document שלו זורקת ServiceError
+        fake_client = MagicMock()
+        fake_client.analyze_document.side_effect = oci.exceptions.ServiceError(
+            status=503,
+            code="ServiceError",
+            headers={},
+            message="OCI down"
+        )
+        mock_get_doc_client.return_value = fake_client
+
+        with open("invoices_sample/invoice_Aaron_Bergman_36259.pdf", "rb") as f:
+            response = self.client.post(
+                "/extract",
+                files={"file": ("invoice.pdf", f, "application/pdf")}
+            )
+
+        self.assertEqual(response.status_code, 503)
+        body = response.json()
+        self.assertIn("error", body)
+        self.assertEqual(
+            body["error"],
+            "The service is currently unavailable. Please try again later."
+        )
 
 
 if __name__ == '__main__':

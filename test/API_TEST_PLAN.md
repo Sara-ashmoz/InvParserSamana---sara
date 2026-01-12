@@ -35,9 +35,7 @@ This approach ensures the API logic is tested in a realistic but controlled envi
 The tests will be executed in the following environments:
 
 - **Local development environment**
-  - Python
-  - pytest / unittest
-  - FastAPI TestClient
+  - TERMINAL - pytest 
 - **CI environment (GitHub Actions)**
   - Automated execution on each pull request
   - Test results and coverage reported automatically
@@ -52,7 +50,7 @@ The test execution will be considered successful when:
 - All tests pass without errors.
 - API responses return expected HTTP status codes.
 - Response payloads match the expected structure.
-- Code coverage for the API layer is as close as possible to 100%.
+- Code coverage for the API layer is as close as possible to 100% and not less then 90%.
 - Continuous Integration (CI) checks pass successfully.
 
 ---
