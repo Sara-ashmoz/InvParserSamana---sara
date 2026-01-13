@@ -13,6 +13,7 @@ from models import Base
 from crud import invoice_crud, confidence_crud, item_crud
 import data_excute
 
+
 app = FastAPI()
 
 
@@ -221,6 +222,7 @@ def get_invoices_by_vendor_endpoint(vendor_name: str, db: Session = Depends(get_
 @app.get("/")
 def home():
     return {"msg": "Hello World"}
+
 
 
 if __name__ == "__main__":
