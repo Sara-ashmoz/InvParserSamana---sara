@@ -1,6 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, Depends
+from fastapi import FastAPI, UploadFile, File
 import oci
 import base64
+from db_util import init_db, save_inv_extraction, get_invoice_by_id, get_invoices_by_vendor
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
 import time
@@ -29,27 +30,15 @@ def get_doc_client():
     return oci.ai_document.AIServiceDocumentClient(config)
 
 
-# create tables on startup (safe single place)
-@app.on_event("startup")
-def startup():
-    Base.metadata.create_all(bind=engine)
-
-
-def _safe_float(v):
-    try:
-        return float(v) if v is not None and v != "" else None
-    except Exception:
-        return None
-
 
 @app.post("/extract")
-async def extract(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def extract(file: UploadFile = File(...)):
     pdf_bytes = await file.read()
 
     # Base64 encode PDF
     encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
 
-    # 1. Validate PDF
+        # 1. Validate PDF
     if file.content_type != "application/pdf":
         return JSONResponse(
             status_code=400,
@@ -61,7 +50,7 @@ async def extract(file: UploadFile = File(...), db: Session = Depends(get_db)):
     document = oci.ai_document.models.InlineDocumentDetails(
         data=encoded_pdf
     )
-
+    
     request = oci.ai_document.models.AnalyzeDocumentDetails(
         document=document,
         features=[
@@ -83,8 +72,8 @@ async def extract(file: UploadFile = File(...), db: Session = Depends(get_db)):
             status_code=503,
             content={
                 "error": "The service is currently unavailable. Please try again later."
-            }
-        )
+                }
+            )
     time_2 = time.time()
 
     data = {}
@@ -96,121 +85,57 @@ async def extract(file: UploadFile = File(...), db: Session = Depends(get_db)):
             for field in page.document_fields:
                 field_name = field.field_label.name if field.field_label else None
                 if field_name == 'Items':
-                    # each item is a dict of item fields
-                    for texts in field.field_value.items:
-                        item_dict = {}
-                        # texts likely contains a group of fields per item; iterate sub-items
-                        for sub in texts.field_value.items:
-                            key = sub.field_label.name if sub.field_label else None
-                            val = sub.field_value.value
-                            item_dict[key] = val
-                        data_items.append(item_dict)
+                    dict = {}
+                    for texts in field.field_value.items[0].field_value.items:
+                        field_valuee = texts.field_label.name
+                        field_text = texts.field_value.value
+                        dict[field_valuee] = field_text
+                        
+                    data_items.append(dict) 
+  
                 else:
                     field_confidence = field.field_label.confidence if field.field_label else None
-                    field_value = field.field_value.value if field.field_value else None
-
-                    data[field_name] = field_value
-                    data_confidence[field_name] = field_confidence
-
+                    field_value = field.field_value.value
+            
+                data[field_name] = field_value
+                data_confidence[field_name] = field_confidence
     data["Items"] = data_items
 
+
     prediction_time = time_2 - time_1
+
 
     result = {
         "confidence": 1.0,
         "data": data,
         "dataConfidence": data_confidence,
-        "predictionTime": prediction_time
+        "predictionTime": prediction_time 
+
     }
 
-    # Persist using CRUD layer (SQLAlchemy session via Depends(get_db))
-    invoice_payload = {
-        "InvoiceId": data.get("InvoiceId"),
-        "VendorName": data.get("VendorName"),
-        "InvoiceDate": data.get("InvoiceDate"),
-        "BillingAddressRecipient": data.get("BillingAddressRecipient"),
-        "ShippingAddress": data.get("ShippingAddress"),
-        "SubTotal": _safe_float(data.get("SubTotal")),
-        "ShippingCost": _safe_float(data.get("ShippingCost")),
-        "InvoiceTotal": _safe_float(data.get("InvoiceTotal")),
-    }
-
-    # create invoice
-    try:
-        data_excute.save_invoice(db, invoice_payload)
-    except Exception:
-        # do not block response on DB errors; still return extraction result
-        pass
-
-    # create confidences (if present)
-    try:
-        confidence_payload = {
-            "InvoiceId": invoice_payload.get("InvoiceId"),
-            "VendorName": _safe_float(data_confidence.get("VendorName")),
-            "InvoiceDate": _safe_float(data_confidence.get("InvoiceDate")),
-            "BillingAddressRecipient": _safe_float(data_confidence.get("BillingAddressRecipient")),
-            "ShippingAddress": _safe_float(data_confidence.get("ShippingAddress")),
-            "SubTotal": _safe_float(data_confidence.get("SubTotal")),
-            "ShippingCost": _safe_float(data_confidence.get("ShippingCost")),
-            "InvoiceTotal": _safe_float(data_confidence.get("InvoiceTotal")),
-        }
-        confidence_crud.create_confidence(db, confidence_payload)
-    except Exception:
-        pass
-
-    # create items
-    for it in data_items:
-        try:
-            item_payload = {
-                "InvoiceId": invoice_payload.get("InvoiceId"),
-                "Description": it.get("Description"),
-                "Name": it.get("Name"),
-                "Quantity": _safe_float(it.get("Quantity")),
-                "UnitPrice": _safe_float(it.get("UnitPrice")),
-                "Amount": _safe_float(it.get("Amount")),
-            }
-            item_crud.create_item(db, item_payload)
-        except Exception:
-            continue
+    save_inv_extraction(result)
 
     return result
 
 
-@app.get("/invoice/{invoice_id}")
-def invoice(invoice_id: str, db: Session = Depends(get_db)):
-    invoice = invoice_crud.get_invoice_by_id(db, invoice_id)
 
-    if not invoice:
+@app.get("/invoice/{invoice_id}")
+def invoice(invoice_id: str):
+    invoice_data = get_invoice_by_id(invoice_id)
+
+    if not invoice_data:
         return JSONResponse(
             status_code=404,
             content={"error": "Invoice not found"}
         )
 
-    return {
-        "InvoiceId": invoice.InvoiceId,
-        "VendorName": invoice.VendorName,
-        "InvoiceDate": invoice.InvoiceDate,
-        "BillingAddressRecipient": invoice.BillingAddressRecipient,
-        "ShippingAddress": invoice.ShippingAddress,
-        "SubTotal": invoice.SubTotal,
-        "ShippingCost": invoice.ShippingCost,
-        "InvoiceTotal": invoice.InvoiceTotal,
-        "Items": [
-            {
-                "Description": it.Description,
-                "Name": it.Name,
-                "Quantity": it.Quantity,
-                "UnitPrice": it.UnitPrice,
-                "Amount": it.Amount,
-            }
-            for it in invoice.items
-        ]
-    }
+
+    return invoice_data
 
 
 @app.get("/invoices/vendor/{vendor_name}")
-def get_invoices_by_vendor_endpoint(vendor_name: str, db: Session = Depends(get_db)):
-    invoices = invoice_crud.get_invoices_by_vendor(db, vendor_name)
+def get_invoices_by_vendor_endpoint(vendor_name: str):
+    invoices = get_invoices_by_vendor(vendor_name)
 
     if not invoices:
         return {
@@ -235,6 +160,5 @@ def home():
 if __name__ == "__main__":
     import uvicorn
 
-    # ensure tables when running directly
-    Base.metadata.create_all(bind=engine)
+    init_db()
     uvicorn.run(app, host="0.0.0.0", port=8080)

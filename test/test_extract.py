@@ -1,16 +1,14 @@
 import unittest
 from unittest.mock import patch, MagicMock
+from db_util import init_db
 from fastapi.testclient import TestClient
-import oci
+import oci 
+
 
 class TestInvoiceExtraction(unittest.TestCase):
 
     def setUp(self):
-        # ensure fresh SQLAlchemy tables for each test run
-        from db import Base, engine
-        Base.metadata.drop_all(bind=engine)
-        Base.metadata.create_all(bind=engine)
-
+        init_db()
         from app import app
         self.client = TestClient(app)
     
@@ -125,6 +123,9 @@ class TestInvoiceExtraction(unittest.TestCase):
             })()
         })()
         
+        # Import app and dependencies after patching
+        from app import app
+        from fastapi.testclient import TestClient
         import json
         
         
@@ -193,7 +194,7 @@ class TestInvoiceExtraction(unittest.TestCase):
 
     @patch("app.get_doc_client")
     def test_of_unavailable_service(self, mock_get_doc_client):
-        # create fake client where analyze_document raises ServiceError
+        # יוצרים client מזויף שהמתודה analyze_document שלו זורקת ServiceError
         fake_client = MagicMock()
         fake_client.analyze_document.side_effect = oci.exceptions.ServiceError(
             status=503,
