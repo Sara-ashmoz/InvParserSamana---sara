@@ -5,9 +5,18 @@ from db_util import init_db, save_inv_extraction, get_invoice_by_id, get_invoice
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
 import time
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_doc_client():
     config = oci.config.from_file()
