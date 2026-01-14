@@ -12,11 +12,18 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3002"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "message": "Backend is running",
+        "api_base_url": "http://localhost:8080"
+    }
 
 def get_doc_client():
     config = oci.config.from_file()
