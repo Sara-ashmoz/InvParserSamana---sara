@@ -132,7 +132,6 @@ async def extract(file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         data_excute.save_invoice(db, invoice_payload)
     except Exception:
-        # do not block response on DB errors; still return extraction result
         pass
 
     # create confidences (if present)
