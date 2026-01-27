@@ -12,7 +12,7 @@ def create_invoice(db: Session, data: dict) -> Invoice:
 
 
 # READ
-def get_invoice_by_id(db: Session, invoice_id: str) -> Invoice | None:
+def get_invoice_by_id(db: Session, invoice_id: str):
     return db.query(Invoice).filter(Invoice.InvoiceId == invoice_id).first()
 
 
@@ -25,7 +25,7 @@ def get_invoices_by_vendor(db: Session, vendor_name: str):
 
 
 # UPDATE
-def update_invoice(db: Session, invoice_id: str, data: dict) -> Invoice | None:
+def update_invoice(db: Session, invoice_id: str, data: dict):
     invoice = get_invoice_by_id(db, invoice_id)
     if not invoice:
         return None

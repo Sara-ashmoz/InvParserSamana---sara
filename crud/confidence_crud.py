@@ -12,14 +12,14 @@ def create_confidence(db: Session, data: dict) -> Confidence:
 
 
 # READ
-def get_confidence_by_invoice_id(db: Session, invoice_id: str) -> Confidence | None:
+def get_confidence_by_invoice_id(db: Session, invoice_id: str):
     return db.query(Confidence).filter(
         Confidence.InvoiceId == invoice_id
     ).first()
 
 
 # UPDATE
-def update_confidence(db: Session, invoice_id: str, data: dict) -> Confidence | None:
+def update_confidence(db: Session, invoice_id: str, data: dict):
     confidence = get_confidence_by_invoice_id(db, invoice_id)
     if not confidence:
         return None

@@ -12,7 +12,7 @@ def create_item(db: Session, data: dict) -> Item:
 
 
 # READ
-def get_item_by_id(db: Session, item_id: int) -> Item | None:
+def get_item_by_id(db: Session, item_id: int) :
     return db.query(Item).filter(Item.id == item_id).first()
 
 
@@ -21,7 +21,7 @@ def get_items_by_invoice_id(db: Session, invoice_id: str):
 
 
 # UPDATE
-def update_item(db: Session, item_id: int, data: dict) -> Item | None:
+def update_item(db: Session, item_id: int, data: dict) :
     item = get_item_by_id(db, item_id)
     if not item:
         return None
